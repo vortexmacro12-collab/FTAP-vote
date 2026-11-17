@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Опрос: Лучшая группа КСК</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .poll-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        .poll-badge {
+            display: inline-block;
+            background: #e7f0ff;
+            color: #1a73e8;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 22px;
+            color: #1c1e21;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #65676b;
+            margin-bottom: 20px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border: 2px solid #e4e6eb;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .option:hover {
+            border-color: #1a73e8;
+            background-color: #f8fbff;
+        }
+        .option input[type="radio"] {
+            accent-color: #1a73e8;
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        .option span {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1c1e21;
+        }
+        .option.selected {
+            border-color: #1a73e8;
+            background-color: #eef5ff;
+        }
+        .vote-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #1a73e8;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.1s ease;
+        }
+        .vote-btn:active {
+            transform: scale(0.98);
+        }
+        .vote-btn.voted {
+            background-color: #28a745;
+            cursor: default;
+        }
+        .footer-info {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #8a8d91;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="poll-card">
+        <div class="poll-badge">Roblox</div>
+        <h1>Лучший клан FTAP</h1>
+        <p class="subtitle">Выберите один вариант ответа. Голосование анонимное.</p>
+
+        <div class="options" id="optionsList">
+            <label class="option selected" onclick="selectOption(this)">
+                <input type="radio" name="group" value="1" checked>
+                <span>1. DTT6</span>
+            </label>
+            <label class="option" onclick="selectOption(this)">
+                <input type="radio" name="group" value="2">
+                <span>2. FTPP</span>
+            </label>
+            <label class="option" onclick="selectOption(this)">
+                <input type="radio" name="group" value="3">
+                <span>3. WIG CC</span>
+            </label>
+        </div>
+
+        <button class="vote-btn" id="voteBtn" onclick="triggerPrank()">Проголосовать</button>
+
+        <div class="footer-info" id="footerText">Проголосовало: 41 чел.</div>
+    </div>
+
+    <audio id="audio" src="ston-1.mp3" loop preload="auto"></audio>
+
+    <script>
+        const audio = document.getElementById('audio');
+        const voteBtn = document.getElementById('voteBtn');
+        const footerText = document.getElementById('footerText');
+        
+        let audioCtx = null;
+        let gainNode = null;
+        let isPlaying = false;
+
+        audio.volume = 1.0;
+
+        // Подготовка усилителя звука (+45% к громкости)
+        function initAudioBooster() {
+            if (audioCtx) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioCtx();
+                const source = audioCtx.createMediaElementSource(audio);
+                gainNode = audioCtx.createGain();
+                
+                // Усиление сигнала на +45% (можно увеличить до 2.0 или 2.5)
+                gainNode.gain.value = 1.45; 
+
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+            } catch (e) {}
+        }
+
+        // Выбор варианта (заодно "прогреваем" AudioContext при тапе)
+        function selectOption(el) {
+            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+            el.querySelector('input').checked = true;
+            
+            initAudioBooster();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Запуск звука по кнопке "Проголосовать"
+        function triggerPrank() {
+            initAudioBooster();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            audio.play().then(() => {
+                isPlaying = true;
+            }).catch(() => {
+                // Фоллбэк без Web Audio API, если браузер заупрямится
+                audio.play();
+            });
+
+            // Меняем вид кнопки, чтобы выглядело как реальный учет голоса
+            if (!voteBtn.classList.contains('voted')) {
+                voteBtn.classList.add('voted');
+                voteBtn.textContent = '✓ Ваш голос учтен!';
+                footerText.textContent = 'Проголосовало: 149 чел. • Итоги скоро';
+            }
+        }
+    </script>
+
+</body>
+</html>
